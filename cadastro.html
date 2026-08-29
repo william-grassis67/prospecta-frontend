@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Criar conta | Leadly</title>
+  <meta name="description" content="Crie sua conta Leadly e comece a capturar e converter leads." />
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="auth-shell">
+
+  <!-- Painel de marca (mesma estrutura do login.html) -->
+  <header class="brand-panel">
+    <div class="brand-panel__compact">
+      <img src="assets/icon-dark.png" alt="" />
+      <span>Leadly</span>
+    </div>
+
+    <div class="brand-panel__top">
+      <div class="brand-mark">
+        <img src="assets/icon-dark.png" alt="Leadly" />
+        <span class="brand-mark__name">Leadly</span>
+      </div>
+
+      <p class="brand-panel__headline">Comece agora.</p>
+      <p class="brand-panel__text">
+        Crie sua conta gratuita e organize a captura e a conversão dos seus leads em um só lugar.
+      </p>
+    </div>
+
+    <div class="brand-panel__bottom">
+      <p class="brand-quote">
+        Cada visita é uma oportunidade. O Leadly ajuda seu time a não deixar nenhuma passar.
+      </p>
+      <p class="brand-panel__footer">© 2026 Leadly. Todos os direitos reservados.</p>
+    </div>
+  </header>
+
+  <!-- Formulário -->
+  <main class="form-panel">
+    <section class="form-card" aria-labelledby="cadastro-title">
+
+      <div class="form-card__header">
+        <span class="form-card__eyebrow">Nova conta</span>
+        <h1 class="form-card__title" id="cadastro-title">Criar conta no Leadly</h1>
+        <p class="form-card__subtitle">Preencha os dados abaixo para começar.</p>
+      </div>
+
+      <form id="cadastroForm" action="#" method="post" novalidate>
+
+        <!-- Alerta de erro geral (falha de validação no backend, e-mail já usado, falha de conexão etc.) -->
+        <div class="notice notice--error" id="formAlert" hidden role="alert">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span></span>
+        </div>
+
+        <!-- Alerta de sucesso, mostrado após o cadastro dar certo -->
+        <div class="notice notice--success" id="formSuccess" hidden role="status">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M8 12l3 3 5-6"></path>
+          </svg>
+          <span></span>
+        </div>
+
+        <div class="field-group">
+
+          <div class="field">
+            <label for="nome">Nome completo</label>
+            <div class="input-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21v-1a8 8 0 0 1 16 0v1"></path>
+              </svg>
+              <input
+                      type="text"
+                      id="nome"
+                      name="nome"
+                      placeholder="Seu nome completo"
+                      autocomplete="name"
+                      required
+              />
+            </div>
+            <p class="field__error" id="nomeError" hidden></p>
+          </div>
+
+          <div class="field">
+            <label for="email">E-mail</label>
+            <div class="input-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 6h18v12H3z"></path>
+                <path d="M3 7l9 6 9-6"></path>
+              </svg>
+              <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      placeholder="voce@empresa.com"
+                      autocomplete="email"
+                      required
+              />
+            </div>
+            <p class="field__error" id="emailError" hidden></p>
+          </div>
+
+          <div class="field">
+            <label for="senha">Senha</label>
+            <div class="input-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="4" y="10" width="16" height="10" rx="2"></rect>
+                <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+              </svg>
+              <input
+                      type="password"
+                      id="senha"
+                      name="senha"
+                      placeholder="Crie uma senha"
+                      autocomplete="new-password"
+                      required
+              />
+              <button type="button" class="input-toggle" data-toggle-for="senha" aria-label="Mostrar senha">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <p class="field__error" id="senhaError" hidden></p>
+          </div>
+
+          <div class="field">
+            <label for="confirmarSenha">Confirmar senha</label>
+            <div class="input-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="4" y="10" width="16" height="10" rx="2"></rect>
+                <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+              </svg>
+              <input
+                      type="password"
+                      id="confirmarSenha"
+                      name="confirmarSenha"
+                      placeholder="Repita a senha"
+                      autocomplete="new-password"
+                      required
+              />
+              <button type="button" class="input-toggle" data-toggle-for="confirmarSenha" aria-label="Mostrar senha">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <p class="field__error" id="confirmarSenhaError" hidden></p>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="cadastroSubmit">Criar minha conta</button>
+
+        </div>
+      </form>
+
+      <p class="form-footer">
+        Já possui uma conta? <a href="login.html">Entrar</a>
+      </p>
+
+    </section>
+  </main>
+
+</div>
+
+<!-- Scripts: config/armazenamento/API primeiro, depois a lógica da tela
+     (mesma ordem usada em login.html, para reaproveitar a mesma arquitetura) -->
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/api.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/cadastro.js"></script>
+
+</body>
+</html>

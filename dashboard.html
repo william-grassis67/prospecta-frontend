@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard | Leadly</title>
+    <meta name="description" content="Visão geral da sua prospecção no Leadly." />
+    <link rel="icon" type="image/png" href="assets/favicon.png" />
+
+    <!-- Estilo Global e Estilo Específico da Dashboard -->
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/dashboard.css" />
+
+    <!-- Leaflet (mapa) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="" />
+</head>
+<body class="dashboard-body">
+
+<div class="dashboard-layout">
+    <!-- Overlay Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 1. Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar__brand">
+            <img src="assets/icon-dark.png" alt="Leadly Logo" class="sidebar__logo" />
+            <span class="sidebar__title">Leadly</span>
+        </div>
+
+        <nav class="sidebar__nav">
+            <a href="dashboard.html" class="nav-item active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="#leads" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <span>Leads</span>
+            </a>
+
+            <a href="#prospeccao" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+                <span>Prospecção</span>
+            </a>
+
+            <a href="#empresas" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+                <span>Empresas</span>
+            </a>
+
+            <a href="#configuracoes" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span>Configurações</span>
+            </a>
+        </nav>
+
+        <div class="sidebar__user">
+            <div class="user-avatar" id="mockAvatarSidebar">--</div>
+            <div class="user-info">
+                <span class="user-name" id="mockNameSidebar">Carregando...</span>
+                <span class="user-email" id="mockEmailSidebar">...</span>
+            </div>
+            <button type="button" class="btn-logout" id="logoutBtn" title="Sair da conta" aria-label="Sair da conta">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+            </button>
+        </div>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="main-header">
+            <div class="header-left">
+                <button type="button" class="mobile-toggle" id="mobileToggle" aria-label="Abrir Menu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <div>
+                    <h1 class="header-title">Dashboard</h1>
+                    <p class="header-subtitle">Visão geral da sua prospecção B2B</p>
+                </div>
+            </div>
+
+            <div class="header-right">
+                <button type="button" class="header-icon-btn" title="Notificações" aria-label="Notificações">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="notification-dot"></span>
+                </button>
+
+                <div class="header-user-badge">
+                    <div class="user-avatar user-avatar--sm" id="mockAvatarHeader">--</div>
+                </div>
+            </div>
+        </header>
+
+        <main class="dashboard-content">
+            <!-- Banner de erro dinâmico -->
+            <div id="dashboardError" hidden></div>
+
+            <!-- Métricas -->
+            <section class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card__header">
+                        <span class="metric-card__title">Total de Leads</span>
+                        <div class="metric-card__icon metric-card__icon--blue">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="metric-card__body">
+                        <span class="metric-card__value" id="valTotalLeads">1.248</span>
+                        <span class="badge badge--success">+12,5% este mês</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card__header">
+                        <span class="metric-card__title">Novos Leads</span>
+                        <div class="metric-card__icon metric-card__icon--purple">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="metric-card__body">
+                        <span class="metric-card__value" id="valNovosLeads">186</span>
+                        <span class="badge badge--success">+8,2% esta semana</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card__header">
+                        <span class="metric-card__title">Leads Convertidos</span>
+                        <div class="metric-card__icon metric-card__icon--green">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="metric-card__body">
+                        <span class="metric-card__value" id="valLeadsConvertidos">324</span>
+                        <span class="badge badge--success">+15,4% este mês</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card__header">
+                        <span class="metric-card__title">Taxa de Conversão</span>
+                        <div class="metric-card__icon metric-card__icon--amber">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="5" x2="5" y2="19"></line>
+                                <circle cx="6.5" cy="6.5" r="2.5"></circle>
+                                <circle cx="17.5" cy="17.5" r="2.5"></circle>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="metric-card__body">
+                        <span class="metric-card__value" id="valTaxaConversao">26%</span>
+                        <span class="badge badge--neutral">+2,1% vs média</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Encontrar Leads -->
+            <!-- Encontrar Leads -->
+            <!-- Encontrar Leads -->
+            <section class="card leads-search-card" id="leads">
+                <div class="card__header">
+                    <div>
+                        <h2 class="card__title">Encontrar Leads</h2>
+                        <p class="card__subtitle">Pesquise empresas por segmento, país, estado e cidade.</p>
+                    </div>
+                </div>
+
+                <form class="leads-search-form" id="leadsSearchForm" novalidate>
+                    <div class="field">
+                        <label for="leadsTipo">Tipo de negócio *</label>
+                        <input type="text" id="leadsTipo" name="tipo" placeholder="Ex: dentista, restaurante, padaria" autocomplete="off" required />
+                    </div>
+
+                    <div class="field">
+                        <label for="leadsPais">País *</label>
+                        <input type="text" id="leadsPais" name="pais" placeholder="Ex: Brasil" autocomplete="off" required />
+                    </div>
+
+                    <div class="field">
+                        <label for="leadsEstado">Estado / Região (opcional)</label>
+                        <input type="text" id="leadsEstado" name="estado" placeholder="Ex: Bahia" autocomplete="off" />
+                    </div>
+
+                    <div class="field">
+                        <label for="leadsLocalizacao">Cidade / Localização</label>
+                        <input type="text" id="leadsLocalizacao" name="localizacao" placeholder="Ex: Salvador" autocomplete="off" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="leadsSearchSubmit">
+                        Buscar Leads
+                    </button>
+                </form>
+
+                <div class="notice" id="leadsSearchAlert" hidden>
+                    <span></span>
+                </div>
+
+                <div id="leadsSearchStatus">
+                    <p class="empty-state">
+                        <strong>Encontre novos leads</strong>
+                        <span>Preencha os campos acima para iniciar a pesquisa.</span>
+                    </p>
+                </div>
+
+                <div id="leadsResults" hidden>
+
+                    <!-- ÁREA DE FILTROS DOS RESULTADOS -->
+                    <div class="leads-filters" id="leadsFilters">
+                        <div class="leads-filters__header">
+                            <h3>Filtros dos resultados</h3>
+                            <button type="button" class="btn btn-tertiary btn-sm" id="clearLeadsFilters">
+                                Limpar filtros
+                            </button>
+                        </div>
+
+                        <div class="leads-filters__body">
+                            <!-- Seletor Rápido (Mostrar) -->
+                            <div class="leads-filters__group">
+                                <span class="leads-filters__label">Mostrar:</span>
+                                <select id="filterMostrarSelect" class="leads-filters__select">
+                                    <option value="todos">Todos</option>
+                                    <option value="telefone">Com telefone</option>
+                                    <option value="email">Com e-mail</option>
+                                    <option value="website">Com website</option>
+                                    <option value="qualquer">Com qualquer contato</option>
+                                </select>
+                            </div>
+
+                            <!-- Contato (Checkboxes) -->
+                            <div class="leads-filters__group">
+                                <span class="leads-filters__label">Contato:</span>
+                                <div class="leads-filters__options">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="filterHasPhone" />
+                                        <span>Somente com telefone</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="filterHasEmail" />
+                                        <span>Somente com e-mail</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="filterHasWebsite" />
+                                        <span>Somente com website</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Completude (Checkboxes) -->
+                            <div class="leads-filters__group">
+                                <span class="leads-filters__label">Completude:</span>
+                                <div class="leads-filters__options">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="filterAnyContact" />
+                                        <span>Somente com pelo menos um contato</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="filterPhoneAndEmail" />
+                                        <span>Somente com telefone + e-mail</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="filterPhoneAndWebsite" />
+                                        <span>Somente com telefone + website</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="leads-results-count" id="leadsResultsCount"></p>
+
+                    <div class="leads-results-grid">
+                        <div class="leads-map-container">
+                            <div id="leadsMap" class="leads-map"></div>
+                        </div>
+
+                        <div class="leads-list" id="leadsList"></div>
+                    </div>
+                </div>
+            </section>
+            <!-- Gráfico + Atividades -->
+            <div class="dashboard-grid">
+                <section class="card chart-card">
+                    <div class="card__header">
+                        <div>
+                            <h2 class="card__title">Leads gerados nos últimos 7 dias</h2>
+                            <p class="card__subtitle">Desempenho da captação de prospects na semana</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <svg class="chart-svg" viewBox="0 0 500 200" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="var(--color-primary, #0066FF)" stop-opacity="0.35"/>
+                                    <stop offset="100%" stop-color="var(--color-primary, #0066FF)" stop-opacity="0.0"/>
+                                </linearGradient>
+                            </defs>
+                            <line x1="0" y1="40" x2="500" y2="40" stroke="#e2e8f0" stroke-dasharray="4" />
+                            <line x1="0" y1="90" x2="500" y2="90" stroke="#e2e8f0" stroke-dasharray="4" />
+                            <line x1="0" y1="140" x2="500" y2="140" stroke="#e2e8f0" stroke-dasharray="4" />
+
+                            <path d="M 0,160 L 0,140 Q 80,100 150,110 T 300,50 T 420,80 T 500,30 L 500,190 L 0,190 Z" fill="url(#chartGradient)" />
+                            <path d="M 0,140 Q 80,100 150,110 T 300,50 T 420,80 T 500,30" fill="none" stroke="var(--color-primary, #0066FF)" stroke-width="3.5" stroke-linecap="round" />
+
+                            <circle cx="0" cy="140" r="4.5" fill="#0066FF" />
+                            <circle cx="83" cy="112" r="4.5" fill="#0066FF" />
+                            <circle cx="166" cy="110" r="4.5" fill="#0066FF" />
+                            <circle cx="250" cy="70" r="4.5" fill="#0066FF" />
+                            <circle cx="333" cy="50" r="4.5" fill="#0066FF" />
+                            <circle cx="416" cy="80" r="4.5" fill="#0066FF" />
+                            <circle cx="500" cy="30" r="4.5" fill="#0066FF" />
+                        </svg>
+                        <div class="chart-labels">
+                            <span>Seg</span>
+                            <span>Ter</span>
+                            <span>Qua</span>
+                            <span>Qui</span>
+                            <span>Sex</span>
+                            <span>Sáb</span>
+                            <span>Dom</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card activity-card">
+                    <div class="card__header">
+                        <h2 class="card__title">Atividade recente</h2>
+                    </div>
+                    <div class="activity-list" id="activityList"></div>
+                </section>
+            </div>
+
+            <!-- Tabela de Leads -->
+            <section class="card table-card">
+                <div class="card__header card__header--flex">
+                    <div>
+                        <h2 class="card__title">Leads recentes</h2>
+                        <p class="card__subtitle">Últimas prospecções movimentadas</p>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" type="button">Ver todos</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="leads-table">
+                        <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Empresa</th>
+                            <th>Status</th>
+                            <th>Data</th>
+                        </tr>
+                        </thead>
+                        <tbody id="leadsTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<!-- Modal de Detalhes -->
+<div class="lead-details-overlay" id="leadDetailsOverlay" hidden style="display: none">
+    <div class="lead-details-panel" role="dialog" aria-modal="true" aria-labelledby="leadDetailsTitle">
+        <button type="button" class="lead-details-close" id="leadDetailsClose" aria-label="Fechar detalhes">&times;</button>
+        <h3 id="leadDetailsTitle"></h3>
+        <div class="lead-details-body" id="leadDetailsBody"></div>
+        <button type="button" class="btn btn-primary" id="leadDetailsAddContact">Adicionar aos contatos</button>
+    </div>
+</div>
+
+<!-- Scripts com suporte a carregamento assíncrono -->
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/dashboard.js"></script>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<script src="js/leads.js"></script>
+</body>
+</html>
