@@ -2,7 +2,7 @@
  * js/leads.js
  * Lógica da funcionalidade "Encontrar Leads", Filtros e Mapa no Frontend.
  *
- * Integra com api.js e storage.js da aplicação.
+ * Integra com api.js, storage.js e message-auto.js da aplicação.
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!form) return;
 
     // --- Referências de Elementos do Formulário ---
+    const smartSearchField = document.getElementById("leadsSmartSearch");
     const tipoField = document.getElementById("leadsTipo");
     const paisField = document.getElementById("leadsPais");
     const estadoField = document.getElementById("leadsEstado");
@@ -34,12 +35,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const filterPhoneAndWebsite = document.getElementById("filterPhoneAndWebsite");
     const clearFiltersBtn = document.getElementById("clearLeadsFilters");
 
+    // --- Elementos de Ordenação e Nível de Oportunidade (Lead Score) ---
+    const filterOrdenarSelect = document.getElementById("filterOrdenarSelect");
+    const filterScoreAlta = document.getElementById("filterScoreAlta");
+    const filterScoreMedia = document.getElementById("filterScoreMedia");
+    const filterScoreBaixa = document.getElementById("filterScoreBaixa");
+    const filterScoreNaoQualificado = document.getElementById("filterScoreNaoQualificado");
+
     // --- Modal de Detalhes ---
     const detailsOverlay = document.getElementById("leadDetailsOverlay");
     const detailsClose = document.getElementById("leadDetailsClose");
     const detailsTitle = document.getElementById("leadDetailsTitle");
     const detailsBody = document.getElementById("leadDetailsBody");
     const detailsAddButton = document.getElementById("leadDetailsAddContact");
+    const detailsAiButton = document.getElementById("leadDetailsAiBtn");
 
     // --- Estado Global do Módulo ---
     let allLeads = [];
@@ -50,6 +59,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let map = null;
     let markers = [];
     let isSearching = false;
+    // Guarda TODOS os parâmetros usados na última busca (antes só tipo/localizacao
+    // eram guardados; pais e estado eram descartados e nunca chegavam ao payload
+    // de "Adicionar aos contatos", mesmo tendo sido informados pelo usuário).
+    let ultimaBuscaParams = { tipo: "", pais: "", estado: "", localizacao: "" };
 
     // --- Helper de Validação de Conteúdo ---
     function hasValue(val) {
@@ -76,6 +89,130 @@ document.addEventListener("DOMContentLoaded", () => {
         if (typeof showAlert === "function") {
             showAlert(searchAlert, "Sua sessão expirou. Faça login novamente.");
         }
+    }
+
+    // --- Busca Inteligente (nicho + localização em texto livre) ---
+    if (smartSearchField) {
+        smartSearchField.addEventListener("input", () => {
+            const valor = smartSearchField.value.trim();
+            if (!valor) return;
+
+            const match = valor.match(/^(.+?)\s+em\s+(.+)$/i);
+
+            if (match) {
+                const nicho = match[1].trim();
+                const local = match[2].trim();
+
+                if (tipoField) tipoField.value = nicho;
+                if (localizacaoField) localizacaoField.value = local;
+            } else {
+                if (tipoField) tipoField.value = valor;
+            }
+        });
+    }
+
+    const CATEGORIAS_CONHECIDAS = [
+        "Dentista",
+        "Restaurante",
+        "Farmácia",
+        "Clínica",
+        "Academia",
+        "Hotel",
+        "Barbearia"
+    ];
+
+    function levenshteinDistance(a, b) {
+        const s1 = a.toLowerCase();
+        const s2 = b.toLowerCase();
+        const dp = Array.from({ length: s1.length + 1 }, (_, i) => [i, ...Array(s2.length).fill(0)]);
+        for (let j = 0; j <= s2.length; j++) dp[0][j] = j;
+
+        for (let i = 1; i <= s1.length; i++) {
+            for (let j = 1; j <= s2.length; j++) {
+                const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+                dp[i][j] = Math.min(
+                    dp[i - 1][j] + 1,
+                    dp[i][j - 1] + 1,
+                    dp[i - 1][j - 1] + cost
+                );
+            }
+        }
+        return dp[s1.length][s2.length];
+    }
+
+    function sugerirCorrecaoCategoria() {
+        if (!tipoField) return;
+
+        const valor = tipoField.value.trim();
+        if (!valor) {
+            removerSugestaoCategoria();
+            return;
+        }
+
+        const correspondeExatamente = CATEGORIAS_CONHECIDAS.some(
+            (cat) => cat.toLowerCase() === valor.toLowerCase()
+        );
+        if (correspondeExatamente) {
+            removerSugestaoCategoria();
+            return;
+        }
+
+        let melhorCategoria = null;
+        let melhorDistancia = Infinity;
+
+        CATEGORIAS_CONHECIDAS.forEach((cat) => {
+            const distancia = levenshteinDistance(valor, cat);
+            if (distancia < melhorDistancia) {
+                melhorDistancia = distancia;
+                melhorCategoria = cat;
+            }
+        });
+
+        const limiteAceitavel = valor.length <= 4 ? 1 : 2;
+
+        if (melhorCategoria && melhorDistancia > 0 && melhorDistancia <= limiteAceitavel) {
+            mostrarSugestaoCategoria(melhorCategoria);
+        } else {
+            removerSugestaoCategoria();
+        }
+    }
+
+    function mostrarSugestaoCategoria(categoriaSugerida) {
+        if (!tipoField) return;
+
+        const field = tipoField.closest(".field");
+        if (!field) return;
+
+        let hintEl = field.querySelector(".field__category-hint");
+        if (!hintEl) {
+            hintEl = document.createElement("p");
+            hintEl.className = "field__category-hint";
+            field.appendChild(hintEl);
+        }
+
+        hintEl.innerHTML = `Você quis dizer <button type="button" class="link-button" data-suggest-category="${escapeAttribute(categoriaSugerida)}">${escapeHtml(categoriaSugerida)}</button>?`;
+    }
+
+    function removerSugestaoCategoria() {
+        if (!tipoField) return;
+        const field = tipoField.closest(".field");
+        if (!field) return;
+        const hintEl = field.querySelector(".field__category-hint");
+        if (hintEl) hintEl.remove();
+    }
+
+    if (tipoField) {
+        tipoField.addEventListener("blur", sugerirCorrecaoCategoria);
+        tipoField.addEventListener("input", () => {
+            removerSugestaoCategoria();
+        });
+        tipoField.closest(".field")?.addEventListener("click", (event) => {
+            const btn = event.target.closest("[data-suggest-category]");
+            if (!btn) return;
+            tipoField.value = btn.getAttribute("data-suggest-category");
+            removerSugestaoCategoria();
+            if (typeof clearFieldError === "function") clearFieldError(tipoField);
+        });
     }
 
     // --- Submissão do Formulário de Busca ---
@@ -134,7 +271,6 @@ document.addEventListener("DOMContentLoaded", () => {
         setResultsVisible(false);
 
         try {
-            // Utiliza o sistema de API centralizado do api.js
             const leads = await searchLeadsRequest(
                 params.tipo,
                 params.pais,
@@ -145,6 +281,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
             allLeads = Array.isArray(leads) ? leads : [];
             addedIndexes = new Set();
+            ultimaBuscaParams = {
+                tipo: params.tipo,
+                pais: params.pais,
+                estado: params.estado,
+                localizacao: params.localizacao
+            };
 
             if (allLeads.length === 0) {
                 showStatusMessage("Nenhum lead encontrado para essa pesquisa.");
@@ -152,11 +294,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+            calcularScoresDosLeads(allLeads, ultimaBuscaParams);
+
             hideStatusMessage();
             setResultsVisible(true);
 
-            // Reseta controles de filtro
             resetFilterControls();
+
+            ordenarLeadsPorScore(allLeads, "maior-score");
             filteredLeads = [...allLeads];
 
             updateUI();
@@ -174,30 +319,34 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (status === 403) {
-                showStatusMessage("Você não tem permissão para realizar esta busca.");
-                if (typeof showAlert === "function") {
-                    showAlert(searchAlert, "Você não tem permissão para realizar esta busca.");
-                }
+                const msg = "Você não tem permissão para realizar esta busca.";
+                showStatusMessage(msg);
+                if (typeof showAlert === "function") showAlert(searchAlert, msg);
                 return;
             }
 
-            if (status === 400 || status === 404) {
-                showStatusMessage("Não foi possível encontrar essa localização. Verifique país, estado e cidade.");
+            if (status === 400 || status === 404 || status === 500) {
+                const backendMsg = isFriendlyBackendMessage(error.message) ? error.message : null;
+
+                const fallback =
+                    status === 500
+                        ? "Não foi possível realizar a busca. Tente novamente."
+                        : "Não foi possível encontrar essa localização. Verifique país, estado e cidade.";
+
+                const finalMsg = backendMsg || fallback;
+
+                showStatusMessage(finalMsg);
                 if (typeof showAlert === "function") {
-                    showAlert(searchAlert, "Não foi possível encontrar essa localização. Verifique país, estado e cidade.");
+                    showAlert(searchAlert, finalMsg);
                 }
+
+                if (backendMsg && /categoria/i.test(backendMsg) && typeof showFieldError === "function" && tipoField) {
+                    showFieldError(tipoField, backendMsg);
+                }
+
                 return;
             }
 
-            if (status === 500) {
-                showStatusMessage("Não foi possível realizar a busca. Tente novamente.");
-                if (typeof showAlert === "function") {
-                    showAlert(searchAlert, "Não foi possível realizar a busca. Tente novamente.");
-                }
-                return;
-            }
-
-            // Tratamento de Erro de Conexão / Rede ou Mensagem Genérica
             const msg = error.message && error.message.includes("conectar")
                 ? "Não foi possível conectar ao servidor."
                 : (error.message || "Não foi possível conectar ao servidor.");
@@ -212,7 +361,33 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // --- Filtros Client-Side (Tempo Real) ---
+    function isFriendlyBackendMessage(message) {
+        if (!message || typeof message !== "string") return false;
+
+        const trimmed = message.trim();
+        if (!trimmed) return false;
+
+        const technicalPatterns = [
+            /exception/i,
+            /\bat\s+[\w.$]+\(/,
+            /java\.[a-z]+\./i,
+            /caused by/i,
+            /whitelabel/i,
+            /stacktrace/i,
+            /nullpointer/i,
+            /internal server error/i
+        ];
+
+        if (technicalPatterns.some((pattern) => pattern.test(trimmed))) {
+            return false;
+        }
+
+        if (trimmed.length > 300) return false;
+
+        return true;
+    }
+
+    // --- Filtros Client-Side ---
     const filterInputs = [
         filterMostrarSelect,
         filterHasPhone,
@@ -224,6 +399,20 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
 
     filterInputs.forEach((input) => {
+        if (input) {
+            input.addEventListener("change", applyLeadFilters);
+        }
+    });
+
+    const scoreFilterInputs = [
+        filterOrdenarSelect,
+        filterScoreAlta,
+        filterScoreMedia,
+        filterScoreBaixa,
+        filterScoreNaoQualificado
+    ];
+
+    scoreFilterInputs.forEach((input) => {
         if (input) {
             input.addEventListener("change", applyLeadFilters);
         }
@@ -254,24 +443,35 @@ document.addEventListener("DOMContentLoaded", () => {
             const hasWeb = hasValue(lead.website);
             const hasAny = hasPhone || hasEmail || hasWeb;
 
-            // Filtro Select
             if (mostrarVal === "telefone" && !hasPhone) return false;
             if (mostrarVal === "email" && !hasEmail) return false;
             if (mostrarVal === "website" && !hasWeb) return false;
             if (mostrarVal === "qualquer" && !hasAny) return false;
 
-            // Checkboxes de contatos individuais
             if (needPhone && !hasPhone) return false;
             if (needEmail && !hasEmail) return false;
             if (needWebsite && !hasWeb) return false;
 
-            // Checkboxes de combinações
             if (needAnyContact && !hasAny) return false;
             if (needPhoneAndEmail && (!hasPhone || !hasEmail)) return false;
             if (needPhoneAndWebsite && (!hasPhone || !hasWeb)) return false;
 
+            const niveisSelecionados = [];
+            if (filterScoreAlta && filterScoreAlta.checked) niveisSelecionados.push("alta");
+            if (filterScoreMedia && filterScoreMedia.checked) niveisSelecionados.push("media");
+            if (filterScoreBaixa && filterScoreBaixa.checked) niveisSelecionados.push("baixa");
+            if (filterScoreNaoQualificado && filterScoreNaoQualificado.checked) niveisSelecionados.push("nao-qualificado");
+
+            if (niveisSelecionados.length > 0) {
+                const nivelDoLead = lead.__scoreData ? lead.__scoreData.nivel : null;
+                if (!niveisSelecionados.includes(nivelDoLead)) return false;
+            }
+
             return true;
         });
+
+        const ordem = filterOrdenarSelect ? filterOrdenarSelect.value : "maior-score";
+        ordenarLeadsPorScore(filteredLeads, ordem);
 
         updateUI();
     }
@@ -284,9 +484,34 @@ document.addEventListener("DOMContentLoaded", () => {
         if (filterAnyContact) filterAnyContact.checked = false;
         if (filterPhoneAndEmail) filterPhoneAndEmail.checked = false;
         if (filterPhoneAndWebsite) filterPhoneAndWebsite.checked = false;
+        if (filterOrdenarSelect) filterOrdenarSelect.value = "maior-score";
+        if (filterScoreAlta) filterScoreAlta.checked = false;
+        if (filterScoreMedia) filterScoreMedia.checked = false;
+        if (filterScoreBaixa) filterScoreBaixa.checked = false;
+        if (filterScoreNaoQualificado) filterScoreNaoQualificado.checked = false;
     }
 
-    // --- Atualização da UI (Cards, Contador, Mapa) ---
+    // --- Lead Score ---
+    function calcularScoresDosLeads(leads, searchParams) {
+        if (typeof calculateLeadScore !== "function") {
+            console.warn("[LEADLY] lead-scoring.js não carregado; Lead Score indisponível.");
+            return;
+        }
+
+        leads.forEach((lead) => {
+            lead.__scoreData = calculateLeadScore(lead, searchParams);
+        });
+    }
+
+    function ordenarLeadsPorScore(leads, ordem) {
+        leads.sort((a, b) => {
+            const scoreA = a.__scoreData ? a.__scoreData.score : 0;
+            const scoreB = b.__scoreData ? b.__scoreData.score : 0;
+            return ordem === "menor-score" ? scoreA - scoreB : scoreB - scoreA;
+        });
+    }
+
+    // --- Atualização da UI ---
     function updateUI() {
         updateResultsCount();
         renderizarCards(filteredLeads);
@@ -343,6 +568,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const isWebsiteValid = hasValue(websiteRaw);
         const alreadyAdded = addedIndexes.has(originalIndex);
 
+        const scoreData = lead.__scoreData;
+
         return `
             <article class="lead-card" data-lead-index="${originalIndex}">
                 <div class="lead-card__header">
@@ -350,20 +577,28 @@ document.addEventListener("DOMContentLoaded", () => {
                     <span class="badge badge--neutral">${escapeHtml(tipo)}</span>
                 </div>
 
+                ${scoreData ? renderScoreRowHTML(scoreData) : ""}
+
                 <div class="lead-card__info">
-                    <p class="lead-card__line">📍 <strong>Endereço:</strong> ${escapeHtml(endereco)}</p>
-                    <p class="lead-card__line">📞 <strong>Telefone:</strong> ${escapeHtml(telefone)}</p>
-                    <p class="lead-card__line">✉ <strong>E-mail:</strong> ${escapeHtml(email)}</p>
-                    <p class="lead-card__line">🔗 <strong>Website:</strong> ${
+                    <p class="lead-card__line"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> <strong>Endereço:</strong> ${escapeHtml(endereco)}</p>
+                    <p class="lead-card__line"><i class="fa-solid fa-phone" aria-hidden="true"></i> <strong>Telefone:</strong> ${escapeHtml(telefone)}</p>
+                    <p class="lead-card__line"><i class="fa-solid fa-envelope" aria-hidden="true"></i> <strong>E-mail:</strong> ${escapeHtml(email)}</p>
+                    <p class="lead-card__line"><i class="fa-solid fa-link" aria-hidden="true"></i> <strong>Website:</strong> ${
             isWebsiteValid
                 ? `<a href="${escapeAttribute(websiteRaw)}" target="_blank" rel="noopener noreferrer">${escapeHtml(websiteFormatted)}</a>`
                 : escapeHtml(websiteFormatted)
         }</p>
                 </div>
 
+                ${scoreData ? renderScoreReasonsHTML(scoreData) : ""}
+
                 <div class="lead-card__actions">
                     <button type="button" class="btn btn-secondary btn-sm" data-details-index="${originalIndex}">
+                        <i class="fa-solid fa-eye" aria-hidden="true"></i>
                         Ver detalhes
+                    </button>
+                    <button type="button" class="btn btn-ai btn-sm" data-ai-index="${originalIndex}">
+                        ✨ LeadlyAI
                     </button>
                     <button
                         type="button"
@@ -371,11 +606,45 @@ document.addEventListener("DOMContentLoaded", () => {
                         data-add-index="${originalIndex}"
                         ${alreadyAdded ? "disabled" : ""}
                     >
-                        ${alreadyAdded ? "✓ Adicionado" : "Adicionar aos contatos"}
+                        <i class="fa-solid ${alreadyAdded ? "fa-check" : "fa-plus"}" aria-hidden="true"></i>
+                        ${alreadyAdded ? "Adicionado" : "Adicionar aos contatos"}
                     </button>
                 </div>
             </article>
         `;
+    }
+
+    function renderScoreRowHTML(scoreData) {
+        const badgeClass =
+            typeof getLeadScoreBadgeClass === "function"
+                ? getLeadScoreBadgeClass(scoreData.nivel)
+                : "";
+
+        return `
+            <div class="lead-card__score-row">
+                <span class="lead-score-badge ${badgeClass}">
+                    <i class="${escapeAttribute(scoreData.emoji)}" aria-hidden="true"></i>
+                    ${escapeHtml(scoreData.label)} — ${scoreData.score}/100
+                </span>
+            </div>
+        `;
+    }
+
+    function renderScoreReasonsHTML(scoreData) {
+        if (!scoreData.motivos || scoreData.motivos.length === 0) return "";
+
+        const itens = scoreData.motivos
+            .map(
+                (motivo) => `
+                    <li class="${motivo.positivo ? "" : "is-negative"}">
+                        <i class="${escapeAttribute(motivo.emoji)}" aria-hidden="true"></i>
+                        ${escapeHtml(motivo.texto)}
+                    </li>
+                `
+            )
+            .join("");
+
+        return `<ul class="lead-score-reasons">${itens}</ul>`;
     }
 
     // --- Integração e Atualização do Mapa ---
@@ -397,7 +666,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function atualizarMarcadoresMapa(leads) {
         if (!map || typeof L === "undefined") return;
 
-        // Remove marcadores antigos
         markers.forEach((m) => map.removeLayer(m));
         markers = [];
 
@@ -438,13 +706,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const nome = formatField(lead.nome);
         const endereco = formatField(lead.endereco);
         const telefone = formatField(lead.telefone);
+        const scoreData = lead.__scoreData;
 
         return `
             <div class="lead-popup">
                 <strong>${escapeHtml(nome)}</strong>
-                <div>📍 ${escapeHtml(endereco)}</div>
-                <div>📞 ${escapeHtml(telefone)}</div>
+                ${scoreData ? `<div><i class="${escapeAttribute(scoreData.emoji)}" aria-hidden="true"></i> ${escapeHtml(scoreData.label)} — ${scoreData.score}/100</div>` : ""}
+                <div><i class="fa-solid fa-location-dot" aria-hidden="true"></i> ${escapeHtml(endereco)}</div>
+                <div><i class="fa-solid fa-phone" aria-hidden="true"></i> ${escapeHtml(telefone)}</div>
                 <button type="button" class="btn btn-secondary btn-sm lead-popup__btn" data-popup-details-index="${originalIndex}">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i>
                     Ver detalhes
                 </button>
             </div>
@@ -459,6 +730,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 const index = Number(detailsBtn.getAttribute("data-details-index"));
                 if (!isNaN(index) && allLeads[index]) {
                     abrirModalDetalhes(allLeads[index], index);
+                }
+                return;
+            }
+
+            const aiBtn = event.target.closest("[data-ai-index]");
+            if (aiBtn) {
+                const index = Number(aiBtn.getAttribute("data-ai-index"));
+                if (!isNaN(index) && allLeads[index]) {
+                    if (typeof openLeadlyAIMessageModal === "function") {
+                        openLeadlyAIMessageModal(allLeads[index]);
+                    }
                 }
                 return;
             }
@@ -483,6 +765,8 @@ document.addEventListener("DOMContentLoaded", () => {
             detailsTitle.textContent = formatField(lead.nome);
         }
 
+        const scoreData = lead.__scoreData;
+
         const fields = [
             ["Nome", formatField(lead.nome)],
             ["Tipo de Negócio", formatField(lead.tipo)],
@@ -493,6 +777,14 @@ document.addEventListener("DOMContentLoaded", () => {
             ["Latitude", toValidNumber(lead.latitude) !== null ? lead.latitude : "Não informado"],
             ["Longitude", toValidNumber(lead.longitude) !== null ? lead.longitude : "Não informado"]
         ];
+
+        if (scoreData) {
+            fields.push([
+                "Lead Score",
+                `${renderScoreRowHTML(scoreData)}${renderScoreReasonsHTML(scoreData)}`,
+                true
+            ]);
+        }
 
         if (detailsBody) {
             detailsBody.innerHTML = fields
@@ -532,48 +824,148 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    if (detailsAiButton) {
+        detailsAiButton.addEventListener("click", () => {
+            if (currentDetailIndex === null) return;
+            const lead = allLeads[currentDetailIndex];
+            fecharModalDetalhes();
+            if (typeof openLeadlyAIMessageModal === "function") {
+                openLeadlyAIMessageModal(lead);
+            }
+        });
+    }
+
     function atualizarBotaoAdicionarModal() {
         if (!detailsAddButton) return;
         const alreadyAdded = currentDetailIndex !== null && addedIndexes.has(currentDetailIndex);
         detailsAddButton.disabled = alreadyAdded;
-        detailsAddButton.textContent = alreadyAdded ? "✓ Adicionado" : "Adicionar aos contatos";
+        detailsAddButton.innerHTML = alreadyAdded
+            ? '<i class="fa-solid fa-check" aria-hidden="true"></i> Adicionado'
+            : '<i class="fa-solid fa-plus" aria-hidden="true"></i> Adicionar aos contatos';
     }
 
-    // --- Adicionar aos Contatos (Frontend Local) ---
+    /**
+     * Converte um lead do RESULTADO DE BUSCA (formato transitório vindo de
+     * /api/leads/search: nome, tipo, endereco, telefone, email, website,
+     * latitude, longitude, __scoreData) no contrato canônico usado para
+     * PERSISTIR o contato em /api/leads (LeadRequestDTO no backend):
+     *
+     *   id, nomeEmpresa, numeroTelefone, categoria, email, instagram,
+     *   pais, cidade, estado, website, leadScore, status, prioridade,
+     *   observacao, dataAdicionado, proximoContato
+     *
+     * Regras importantes:
+     * - Nenhum campo é descartado por estar undefined: cada campo ausente
+     *   vira `null` explicitamente (nunca uma chave que simplesmente some
+     *   do objeto), então o backend sempre recebe o contrato completo.
+     * - `pais`/`estado`/`cidade` não vêm no objeto de busca (o backend de
+     *   busca não devolve isso por lead) — usamos os parâmetros da última
+     *   busca (ultimaBuscaParams) como melhor aproximação disponível. Se no
+     *   futuro /api/leads/search passar a devolver esses campos por lead,
+     *   troque a fonte aqui para lead.pais / lead.cidade / lead.estado.
+     * - `leadScore` já está calculado no frontend (lead-scoring.js) e
+     *   simplesmente não estava sendo enviado — agora é incluído.
+     * - `status`/`prioridade` recebem um valor inicial sensato no momento
+     *   da criação; o backend também aplica esse default (dupla proteção),
+     *   então mesmo que o frontend mude no futuro isso não quebra.
+     */
+    function montarPayloadCriacaoLead(lead) {
+        const scoreData = lead.__scoreData;
+
+        return {
+            nomeEmpresa: hasValue(lead.nome) ? lead.nome.trim() : null,
+            numeroTelefone: hasValue(lead.telefone) ? lead.telefone.trim() : null,
+            categoria: hasValue(lead.tipo) ? lead.tipo.trim() : null,
+            email: hasValue(lead.email) ? lead.email.trim() : null,
+            instagram: hasValue(lead.instagram) ? lead.instagram.trim() : null,
+            website: hasValue(lead.website) ? lead.website.trim() : null,
+            pais: hasValue(ultimaBuscaParams.pais) ? ultimaBuscaParams.pais.trim() : null,
+            cidade: hasValue(ultimaBuscaParams.localizacao) ? ultimaBuscaParams.localizacao.trim() : null,
+            estado: hasValue(ultimaBuscaParams.estado) ? ultimaBuscaParams.estado.trim() : null,
+            leadScore: scoreData && Number.isFinite(scoreData.score) ? scoreData.score : null,
+            status: "NOVO",
+            prioridade: "MEDIA",
+            observacao: null,
+            proximoContato: null
+        };
+    }
+
+    // --- Adicionar aos Contatos (POST /api/leads) ---
     async function adicionarAosContatosLocal(lead, index, buttonEl) {
         if (!lead || addedIndexes.has(index)) return;
 
-        addedIndexes.add(index);
-
-        if (buttonEl) {
-            buttonEl.disabled = true;
-            buttonEl.textContent = "✓ Adicionado";
+        const token = getAuthToken();
+        if (!token) {
+            handleUnauthorized();
+            return;
         }
 
         const cardBtn = document.querySelector(`[data-add-index="${index}"]`);
-        if (cardBtn) {
-            cardBtn.disabled = true;
-            cardBtn.textContent = "✓ Adicionado";
+        setAddButtonState(buttonEl, "loading");
+        setAddButtonState(cardBtn, "loading");
+        if (detailsAddButton && currentDetailIndex === index) {
+            detailsAddButton.disabled = true;
+            detailsAddButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Adicionando...';
         }
 
-        atualizarBotaoAdicionarModal();
+        const payload = montarPayloadCriacaoLead(lead);
 
-        // Tenta enviar para o backend caso exista /api/contacts no futuro
-        const token = getAuthToken();
-        if (token && typeof addContactRequest === "function") {
-            try {
-                await addContactRequest({
-                    name: lead.nome,
-                    address: lead.endereco,
-                    phone: lead.telefone,
-                    website: lead.website,
-                    latitude: lead.latitude,
-                    longitude: lead.longitude,
-                    category: lead.tipo
-                }, token);
-            } catch (err) {
-                console.info("[LEADLY] Backend ainda sem suporte a salvar contatos ou rota indisponível:", err.message);
+        try {
+            await createLeadRequest(payload, token);
+
+            addedIndexes.add(index);
+            setAddButtonState(buttonEl, "added");
+            setAddButtonState(cardBtn, "added");
+            atualizarBotaoAdicionarModal();
+
+            if (typeof showAlert === "function") {
+                showAlert(searchAlert, "Lead adicionado aos seus contatos com sucesso.");
+                searchAlert.classList.remove("notice--error");
+                searchAlert.classList.add("notice--success");
             }
+        } catch (error) {
+            console.error("[LEADLY] Erro ao adicionar lead aos contatos:", error);
+
+            setAddButtonState(buttonEl, "idle");
+            setAddButtonState(cardBtn, "idle");
+            if (detailsAddButton && currentDetailIndex === index) {
+                atualizarBotaoAdicionarModal();
+            }
+
+            if (error.status === 401) {
+                handleUnauthorized();
+                return;
+            }
+
+            let message = error.message || "Não foi possível adicionar este lead aos contatos.";
+            if (error.status === 409) {
+                addedIndexes.add(index);
+                setAddButtonState(buttonEl, "added");
+                setAddButtonState(cardBtn, "added");
+                atualizarBotaoAdicionarModal();
+                message = "Este lead já estava nos seus contatos.";
+            }
+
+            if (typeof showAlert === "function") {
+                showAlert(searchAlert, message);
+                searchAlert.classList.remove("notice--success");
+                searchAlert.classList.add("notice--error");
+            }
+        }
+    }
+
+    function setAddButtonState(buttonEl, state) {
+        if (!buttonEl) return;
+
+        if (state === "loading") {
+            buttonEl.disabled = true;
+            buttonEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Adicionando...';
+        } else if (state === "added") {
+            buttonEl.disabled = true;
+            buttonEl.innerHTML = '<i class="fa-solid fa-check" aria-hidden="true"></i> Adicionado';
+        } else {
+            buttonEl.disabled = false;
+            buttonEl.innerHTML = '<i class="fa-solid fa-plus" aria-hidden="true"></i> Adicionar aos contatos';
         }
     }
 

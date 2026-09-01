@@ -114,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         showAlert(formSuccess || formAlert, "Conta criada com sucesso! Redirecionando para o login...");
         setTimeout(() => {
-          window.location.href = "index.html";
+          window.location.href = "login.html";
         }, 1500);
       }
     } catch (error) {

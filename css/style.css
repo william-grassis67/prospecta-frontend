@@ -169,10 +169,10 @@ label:focus-within {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(circle, rgba(255, 255, 255, 0.09) 1px, transparent 1.4px);
+          radial-gradient(circle, rgba(255, 255, 255, 0.09) 1px, transparent 1.4px);
   background-size: 22px 22px;
   -webkit-mask-image: linear-gradient(115deg, transparent 35%, #000 62%, transparent 88%);
-          mask-image: linear-gradient(115deg, transparent 35%, #000 62%, transparent 88%);
+  mask-image: linear-gradient(115deg, transparent 35%, #000 62%, transparent 88%);
   pointer-events: none;
 }
 
@@ -749,28 +749,9 @@ label:focus-within {
     padding: var(--gap-md) var(--gap-lg);
   }
 }
-/* =========================================================================
-   IMPORTANTE — LEIA ANTES DE USAR ESTE ARQUIVO
-   =========================================================================
-   Você não me enviou o conteúdo atual do seu css/style.css (só o login.html
-   que faz referência a ele). Como o cadastro.html reaproveita exatamente as
-   mesmas classes do login (.auth-shell, .brand-panel, .form-panel,
-   .form-card, .field, .input-wrap, .btn, .btn-primary, .notice,
-   .notice--error, .form-footer etc.), todo o visual existente já funciona
-   sem nenhuma alteração.
-
-   O que está abaixo NÃO é o arquivo inteiro — são apenas as regras NOVAS
-   que a tela de cadastro precisa e que provavelmente ainda não existem no
-   seu style.css atual:
-     1. .field__error        -> mensagem de erro abaixo de cada campo
-     2. .field--invalid       -> estado do input quando o campo tem erro
-     3. .notice--success      -> variação verde do alerta (cadastro OK)
-     4. select dentro do .input-wrap -> estilizar o <select> de tipoUsuario
-     5. estado de "carregando" do botão de submit
-
-   Copie e cole este bloco no FINAL do seu css/style.css real. Não
-   sobrescreva o arquivo — apenas adicione o conteúdo abaixo a ele.
-   ========================================================================= */
+/* --------------------------------------------------------------------------
+   12. Cadastro — validação de campo, select e estado de carregamento
+   -------------------------------------------------------------------------- */
 
 /* Mensagem de erro por campo */
 .field__error {

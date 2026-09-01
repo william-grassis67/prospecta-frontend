@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Entrar | Leadly</title>
+  <meta name="description" content="Acesse sua conta Leadly para continuar capturando e convertendo leads." />
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div class="auth-shell" >
+
+    <!-- Painel de marca -->
+    <header class="brand-panel">
+      <div class="brand-panel__compact">
+        <img src="assets/icon-dark.png" alt="" />
+        <span>Leadly</span>
+      </div>
+
+      <div class="brand-panel__top">
+        <div class="brand-mark">
+          <img src="assets/icon-dark.png" alt="Leadly" />
+          <span class="brand-mark__name">Leadly</span>
+        </div>
+
+        <p class="brand-panel__headline">Bem-vindo de volta.</p>
+        <p class="brand-panel__text">
+          Acesse sua conta para acompanhar seus leads e continuar de onde parou.
+        </p>
+      </div>
+
+      <div class="brand-panel__bottom">
+        <p class="brand-quote">
+          Cada visita é uma oportunidade. O Leadly ajuda seu time a não deixar nenhuma passar.
+        </p>
+        <p class="brand-panel__footer">© 2026 Leadly. Todos os direitos reservados.</p>
+      </div>
+    </header>
+
+    <!-- Formulário -->
+    <main class="form-panel">
+      <section class="form-card" aria-labelledby="login-title">
+
+        <div class="form-card__header">
+          <span class="form-card__eyebrow">Acesso à conta</span>
+          <h1 class="form-card__title" id="login-title">Entrar no Leadly</h1>
+          <p class="form-card__subtitle">Informe suas credenciais para continuar.</p>
+        </div>
+
+        <form id="loginForm" action="#" method="post" novalidate>
+
+          <!-- Alerta de erro geral (credenciais inválidas, falha de conexão etc.) -->
+          <div class="notice notice--error" id="formAlert" hidden role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span></span>
+          </div>
+
+          <div class="field-group">
+
+            <div class="field">
+              <label for="email">E-mail</label>
+              <div class="input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 6h18v12H3z"></path>
+                  <path d="M3 7l9 6 9-6"></path>
+                </svg>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="voce@empresa.com"
+                  autocomplete="email"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="field__label-row">
+                <label for="senha">Senha</label>
+                <a href="forgotpassword.html" class="field__hint-link">Esqueci minha senha</a>
+              </div>
+              <div class="input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="4" y="10" width="16" height="10" rx="2"></rect>
+                  <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+                </svg>
+                <input
+                  type="password"
+                  id="senha"
+                  name="senha"
+                  placeholder="Sua senha"
+                  autocomplete="current-password"
+                  required
+                />
+                <button type="button" class="input-toggle" aria-label="Mostrar senha">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="checkbox-row">
+              <input type="checkbox" id="lembrar" name="lembrar" />
+              <label for="lembrar">Lembrar de mim neste dispositivo</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="loginSubmit">Entrar</button>
+
+          </div>
+        </form>
+
+        <p class="form-footer">
+          Ainda não possui uma conta? <a href="cadastro.html">Criar conta</a>
+        </p>
+
+      </section>
+    </main>
+
+  </div>
+
+  <!-- Scripts: config/armazenamento/API primeiro, depois a lógica da tela -->
+  <script src="js/config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui-helpers.js"></script>
+  <script src="js/login.js"></script>
+
+</body>
+</html>

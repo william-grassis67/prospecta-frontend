@@ -1,0 +1,116 @@
+/**
+ * css/leads-manager.css
+ *
+ * Estilos da seção "Meus Leads" (contatos salvos): grade de cards,
+ * ícone Font Awesome no menu lateral, botão de ação destrutiva (Excluir)
+ * e o formulário do modal de edição (#leadEditForm). Reaproveita classes
+ * já existentes em dashboard.css (.card, .btn, .lead-card, .notice,
+ * .empty-state, .lead-details-overlay/.lead-details-panel) — este arquivo
+ * só acrescenta o que é específico do gerenciamento de leads salvos.
+ *
+ * Movido para este arquivo a partir de dashboard.css, onde estava
+ * indevidamente colado (causa original do 404 em css/leads-manager.css).
+ * Nenhum estilo foi duplicado: o que está aqui foi removido de lá.
+ */
+
+/* Ícone Font Awesome no item de navegação lateral (mesmo espaço dos SVGs) */
+.nav-item i.fa-solid,
+.nav-item i.fa-regular {
+    width: 20px;
+    text-align: center;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+}
+
+/* Botão de ação destrutiva (Excluir) — segue a mesma forma dos outros
+   botões (.btn, .btn-sm) já usados no projeto, apenas com cor de perigo. */
+.btn-danger {
+    background-color: var(--color-danger, #dc2626);
+    border: 1px solid var(--color-danger, #dc2626);
+    color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background-color: #b91c1c;
+    border-color: #b91c1c;
+}
+
+.btn-danger:active:not(:disabled) {
+    background-color: #991b1b;
+    border-color: #991b1b;
+}
+
+.btn-danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-danger.is-loading::after {
+    border: 2px solid rgba(255, 255, 255, 0.45);
+    border-top-color: #ffffff;
+}
+
+/* Grade simples para os cards de "Meus Leads", caso .leads-list não defina
+   um layout de grade fora do contexto de resultados de busca. */
+#myLeadsList.leads-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+/* Ações do card com 3 botões (Ver detalhes / Editar / Excluir) */
+#meus-leads .lead-card__actions,
+.lead-details-panel .lead-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+#meus-leads .lead-card__actions .btn,
+.lead-details-panel .lead-card__actions .btn {
+    flex: 1 1 auto;
+    white-space: nowrap;
+}
+
+/* Formulário do modal de edição */
+#leadEditForm .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+#leadEditForm label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+#leadEditForm input {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--color-border, #d1d5db);
+    border-radius: var(--radius-sm, 8px);
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--color-text, #0f172a);
+    background-color: var(--color-surface, #fff);
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+#leadEditForm input:focus {
+    outline: none;
+    border-color: var(--color-primary, #0066ff);
+    box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.12);
+}
+
+/* fa-spin já é fornecido pelo próprio Font Awesome, mas garantimos aqui
+   caso a versão carregada não inclua a keyframe por algum motivo. */
+@keyframes fa-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.fa-spin {
+    animation: fa-spin 1s linear infinite;
+}

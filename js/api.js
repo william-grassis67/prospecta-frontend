@@ -7,12 +7,17 @@
  * - config.js
  *
  * API:
- * - POST /api/auth/login
- * - POST /api/auth/register
- * - POST /api/auth/forgot-password
- * - POST /api/auth/reset-password
- * - GET  /api/user/me
- * - GET  /api/leads/search
+ * - POST   /api/auth/login
+ * - POST   /api/auth/register
+ * - POST   /api/auth/forgot-password
+ * - POST   /api/auth/reset-password
+ * - GET    /api/user/me
+ * - GET    /api/leads/search
+ * - POST   /api/leads
+ * - GET    /api/leads
+ * - GET    /api/leads/{id}
+ * - PUT    /api/leads/{id}
+ * - DELETE /api/leads/{id}
  */
 
 
@@ -215,6 +220,16 @@ async function getMeRequest(token) {
  *
  * O backend retorna texto simples.
  */
+/**
+ * Solicita recuperação de senha (envia o código de 6 dígitos por e-mail).
+ *
+ * Backend:
+ *
+ * POST /api/auth/forgot-password
+ *
+ * Resposta (JSON): { message: "..." }
+ * Sempre retorna 200 — o backend nunca revela se o e-mail existe ou não.
+ */
 async function forgotPasswordRequest(email) {
 
     const response =
@@ -231,49 +246,19 @@ async function forgotPasswordRequest(email) {
             }
         );
 
-
-    const text =
-        await response.text();
-
+    const data =
+        await parseJson(response);
 
     if (!response.ok) {
 
-        let message = null;
-
-
-        /*
-         * Tentamos interpretar como JSON
-         * caso o Spring retorne um objeto de erro.
-         */
-        try {
-
-            const data =
-                JSON.parse(text);
-
-            message =
-                getMessageFromData(data);
-
-        } catch (_) {
-
-            /*
-             * Se não for JSON,
-             * utilizamos o próprio texto.
-             */
-            message =
-                text;
-        }
-
-
         throw new Error(
-            message ||
-            "Não foi possível enviar o e-mail de recuperação."
+            getMessageFromData(data) ||
+            "Não foi possível enviar o código de recuperação."
         );
     }
 
-
-    return text;
+    return data;
 }
-
 
 /* =========================================================
    RESET PASSWORD
@@ -285,6 +270,16 @@ async function forgotPasswordRequest(email) {
  * Backend:
  *
  * POST /api/auth/reset-password
+ */
+/**
+ * Altera a senha utilizando o token temporário de reset (emitido por
+ * verifyResetCodeRequest, não é mais um UUID de link por e-mail).
+ *
+ * Backend:
+ *
+ * POST /api/auth/reset-password
+ *
+ * Resposta (JSON): { message: "..." }
  */
 async function resetPasswordRequest(token, password) {
 
@@ -303,42 +298,68 @@ async function resetPasswordRequest(token, password) {
             }
         );
 
-
-    const text =
-        await response.text();
-
+    const data =
+        await parseJson(response);
 
     if (!response.ok) {
 
-        let message = null;
-
-
-        try {
-
-            const data =
-                JSON.parse(text);
-
-            message =
-                getMessageFromData(data);
-
-        } catch (_) {
-
-            message =
-                text;
-        }
-
-
         throw new Error(
-            message ||
+            getMessageFromData(data) ||
             "Não foi possível alterar a senha."
         );
     }
 
-
-    return text;
+    return data;
 }
 
+/* =========================================================
+   VERIFY RESET CODE
+   ========================================================= */
 
+/**
+ * Verifica o código de 6 dígitos enviado por e-mail e, se válido, retorna
+ * um token temporário que autoriza a chamada seguinte a resetPasswordRequest().
+ *
+ * Backend:
+ *
+ * POST /api/auth/verify-reset-code
+ *
+ * Resposta (JSON): { resetToken: "..." }
+ *
+ * @param {string} email
+ * @param {string} code - 6 dígitos
+ * @returns {Promise<Object>} { resetToken }
+ */
+async function verifyResetCodeRequest(email, code) {
+
+    const response =
+        await apiFetch(
+            `${API_BASE}/api/auth/verify-reset-code`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    email: email,
+                    code: code
+                })
+            }
+        );
+
+    const data =
+        await parseJson(response);
+
+    if (!response.ok) {
+
+        throw new Error(
+            getMessageFromData(data) ||
+            "O código informado está incorreto."
+        );
+    }
+
+    return data;
+}
 /* =========================================================
    ENCONTRAR LEADS
    ========================================================= */
@@ -417,27 +438,53 @@ async function searchLeadsRequest(tipo, pais, estado, localizacao, token) {
 
 
 /* =========================================================
-   CONTATOS (Adicionar lead aos contatos)
+   CONTATOS (Adicionar lead aos contatos) — LEGADO
    ========================================================= */
 
 /**
- * Adiciona um lead à lista de contatos do usuário.
- *
- * Endpoint:
- * POST /api/contacts
+ * @deprecated Mantida apenas por compatibilidade. O backend atual não
+ * expõe mais POST /api/contacts — use createLeadRequest() (POST /api/leads).
  *
  * @param {Object} lead - { name, address, phone, website, instagram, latitude, longitude, category }
  * @param {string} token
- * @returns {Promise<Object>} contato criado, conforme resposta do backend
+ * @returns {Promise<Object>}
  */
 async function addContactRequest(lead, token) {
+    return createLeadRequest(lead, token);
+}
+
+
+/* =========================================================
+   LEADS (CRUD — Meus Leads / Contatos salvos)
+   ========================================================= */
+
+/**
+ * Salva um lead na conta do usuário (adiciona aos contatos).
+ *
+ * Endpoint:
+ * POST /api/leads
+ *
+ * IMPORTANTE — CreateLeadRequest:
+ * Não temos acesso ao arquivo-fonte do DTO `CreateLeadRequest`. Os nomes de
+ * campo abaixo (name, address, phone, email, website, instagram, latitude,
+ * longitude, category) foram inferidos a partir do único ponto do próprio
+ * frontend que já documentava esse contrato (comentário JSDoc da antiga
+ * addContactRequest, que apontava para POST /api/contacts com esse mesmo
+ * formato de objeto). Caso o `CreateLeadRequest` real do backend use outros
+ * nomes, ajuste apenas o objeto `lead` monta do em leads.js.
+ *
+ * @param {Object} lead - { name, address, phone, email, website, instagram, latitude, longitude, category }
+ * @param {string} token
+ * @returns {Promise<Object>} LeadResponseDTO do lead criado (201 Created)
+ */
+async function createLeadRequest(lead, token) {
 
     if (!token) {
         throw new Error("Token de autenticação não encontrado.");
     }
 
     const response = await apiFetch(
-        `${API_BASE}/api/contacts`,
+        `${API_BASE}/api/leads`,
         {
             method: "POST",
             headers: {
@@ -457,12 +504,238 @@ async function addContactRequest(lead, token) {
     const data = await parseJson(response);
 
     if (!response.ok) {
-        throw new Error(
-            getMessageFromData(data) || "Não foi possível adicionar aos contatos."
+        const error = new Error(
+            getMessageFromData(data) || friendlyMessageForStatus(response.status, "adicionar aos contatos")
         );
+        error.status = response.status;
+        throw error;
     }
 
     return data;
+}
+
+/**
+ * Lista os leads salvos (contatos) do usuário autenticado.
+ *
+ * Endpoint:
+ * GET /api/leads
+ *
+ * @param {string} token
+ * @returns {Promise<Array>} lista de LeadResponseDTO
+ */
+async function getMyLeadsRequest(token) {
+
+    if (!token) {
+        throw new Error("Token de autenticação não encontrado.");
+    }
+
+    const response = await apiFetch(
+        `${API_BASE}/api/leads`,
+        {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            }
+        }
+    );
+
+    if (response.status === 401 || response.status === 403) {
+        const error = new Error("Sessão expirada. Faça login novamente.");
+        error.status = response.status;
+        throw error;
+    }
+
+    if (!response.ok) {
+        const error = new Error(friendlyMessageForStatus(response.status, "carregar seus leads"));
+        error.status = response.status;
+        throw error;
+    }
+
+    const data = await parseJson(response);
+    return Array.isArray(data) ? data : [];
+}
+
+/**
+ * Busca um lead salvo pelo ID.
+ *
+ * Endpoint:
+ * GET /api/leads/{id}
+ *
+ * @param {string|number} id
+ * @param {string} token
+ * @returns {Promise<Object>} LeadResponseDTO
+ */
+async function getLeadByIdRequest(id, token) {
+
+    if (!token) {
+        throw new Error("Token de autenticação não encontrado.");
+    }
+
+    const response = await apiFetch(
+        `${API_BASE}/api/leads/${id}`,
+        {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            }
+        }
+    );
+
+    if (response.status === 401 || response.status === 403) {
+        const error = new Error("Sessão expirada. Faça login novamente.");
+        error.status = response.status;
+        throw error;
+    }
+
+    if (response.status === 404) {
+        const error = new Error("Lead não encontrado.");
+        error.status = 404;
+        throw error;
+    }
+
+    if (!response.ok) {
+        const error = new Error(friendlyMessageForStatus(response.status, "carregar os detalhes do lead"));
+        error.status = response.status;
+        throw error;
+    }
+
+    return await parseJson(response);
+}
+
+/**
+ * Atualiza um lead salvo.
+ *
+ * Endpoint:
+ * PUT /api/leads/{id}
+ *
+ * IMPORTANTE — UpdateLeadRequest: pelo mesmo motivo explicado em
+ * createLeadRequest, não temos o DTO real. Assumimos o mesmo formato de
+ * campos usado em CreateLeadRequest. Ajuste em leads-manager.js se o
+ * backend usar um contrato diferente.
+ *
+ * @param {string|number} id
+ * @param {Object} lead - mesmo formato de CreateLeadRequest
+ * @param {string} token
+ * @returns {Promise<Object>} LeadResponseDTO atualizado
+ */
+async function updateLeadRequest(id, lead, token) {
+
+    if (!token) {
+        throw new Error("Token de autenticação não encontrado.");
+    }
+
+    const response = await apiFetch(
+        `${API_BASE}/api/leads/${id}`,
+        {
+            method: "PUT",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(lead)
+        }
+    );
+
+    if (response.status === 401 || response.status === 403) {
+        const error = new Error("Sessão expirada. Faça login novamente.");
+        error.status = response.status;
+        throw error;
+    }
+
+    if (response.status === 404) {
+        const error = new Error("Lead não encontrado.");
+        error.status = 404;
+        throw error;
+    }
+
+    const data = await parseJson(response);
+
+    if (!response.ok) {
+        const error = new Error(
+            getMessageFromData(data) || friendlyMessageForStatus(response.status, "salvar as alterações")
+        );
+        error.status = response.status;
+        throw error;
+    }
+
+    return data;
+}
+
+/**
+ * Exclui um lead salvo.
+ *
+ * Endpoint:
+ * DELETE /api/leads/{id}
+ *
+ * @param {string|number} id
+ * @param {string} token
+ * @returns {Promise<void>}
+ */
+async function deleteLeadRequest(id, token) {
+
+    if (!token) {
+        throw new Error("Token de autenticação não encontrado.");
+    }
+
+    const response = await apiFetch(
+        `${API_BASE}/api/leads/${id}`,
+        {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        }
+    );
+
+    if (response.status === 401 || response.status === 403) {
+        const error = new Error("Sessão expirada. Faça login novamente.");
+        error.status = response.status;
+        throw error;
+    }
+
+    if (response.status === 404) {
+        const error = new Error("Lead não encontrado (talvez já tenha sido excluído).");
+        error.status = 404;
+        throw error;
+    }
+
+    // 204 No Content é o retorno esperado em caso de sucesso.
+    if (!response.ok && response.status !== 204) {
+        const error = new Error(friendlyMessageForStatus(response.status, "excluir o lead"));
+        error.status = response.status;
+        throw error;
+    }
+}
+
+
+/* =========================================================
+   MENSAGENS AMIGÁVEIS POR STATUS HTTP
+   ========================================================= */
+
+/**
+ * Converte um status HTTP em uma mensagem amigável e genérica,
+ * evitando expor stack traces ou mensagens técnicas do backend.
+ */
+function friendlyMessageForStatus(status, acao) {
+
+    switch (status) {
+        case 400:
+        case 422:
+            return `Não foi possível ${acao}. Verifique os dados informados.`;
+        case 401:
+            return "Sessão expirada. Faça login novamente.";
+        case 403:
+            return "Você não tem permissão para realizar esta ação.";
+        case 404:
+            return "Não encontrado.";
+        case 409:
+            return "Este lead já está nos seus contatos.";
+        case 500:
+        default:
+            return `Não foi possível ${acao}. Tente novamente em instantes.`;
+    }
 }
 
 
@@ -554,4 +827,54 @@ function getMessageFromData(data) {
         data.detail ||
         null
     );
+}
+/* =========================================================
+   LEADLY AI (Geração de Mensagens)
+   ========================================================= */
+
+/**
+ * Solicita a geração automática de mensagem ao LeadlyAI.
+ *
+ * Endpoint:
+ * POST /api/messages/generate
+ *
+ * O backend lê automaticamente o usuário logado via JWT no Header.
+ * NÃO envia body ou dados pessoais do usuário no envio.
+ *
+ * @param {string} token - JWT do usuário autenticado
+ * @returns {Promise<Object>} Resposta { message: string, success: boolean }
+ */
+async function generateMessageRequest(token) {
+    if (!token) {
+        throw new Error("Token de autenticação não encontrado.");
+    }
+
+    const response = await apiFetch(
+        `${API_BASE}/api/messages/generate`,
+        {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            }
+        }
+    );
+
+    if (response.status === 401 || response.status === 403) {
+        const error = new Error("Sessão expirada. Faça login novamente.");
+        error.status = response.status;
+        throw error;
+    }
+
+    const data = await parseJson(response);
+
+    if (!response.ok) {
+        const error = new Error(
+            getMessageFromData(data) || "Não foi possível gerar a mensagem. Tente novamente."
+        );
+        error.status = response.status;
+        throw error;
+    }
+
+    return data;
 }

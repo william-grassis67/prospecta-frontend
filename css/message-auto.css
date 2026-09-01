@@ -1,0 +1,102 @@
+/* Modal LeadlyAI */
+.leadly-ai-card {
+    max-width: 550px;
+    width: 90%;
+}
+
+.leadly-ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-primary, #0066FF);
+    background: rgba(0, 102, 255, 0.1);
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+}
+
+.leadly-ai-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    gap: 16px;
+    color: var(--color-text-muted, #64748b);
+}
+
+.leadly-ai-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(0, 102, 255, 0.2);
+    border-top-color: var(--color-primary, #0066FF);
+    border-radius: 50%;
+    animation: leadlyAiSpin 0.8s linear infinite;
+}
+
+@keyframes leadlyAiSpin {
+    to { transform: rotate(360deg); }
+}
+
+.leadly-ai-textarea {
+    width: 100%;
+    min-height: 180px;
+    padding: 12px;
+    border: 1px solid var(--color-border, #cbd5e1);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    resize: vertical;
+    background-color: var(--color-bg-input, #fff);
+    color: var(--color-text, #1e293b);
+    box-sizing: border-box;
+}
+
+.leadly-ai-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary, #0066FF);
+    box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.15);
+}
+
+.leadly-ai-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+
+.leadly-ai-actions-right {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-ai {
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    color: #ffffff;
+    border: none;
+    transition: opacity 0.2s, transform 0.15s ease;
+}
+
+.btn-ai:hover {
+    opacity: 0.9;
+}
+
+.btn-ai:active {
+    transform: translateY(1px);
+}
+
+.btn-ai:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-ai.is-loading::after {
+    border: 2px solid rgba(255, 255, 255, 0.45);
+    border-top-color: #ffffff;
+}

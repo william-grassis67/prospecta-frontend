@@ -145,13 +145,13 @@ async function getAuthenticatedUser(token) {
 /**
  * Redireciona o usuário para a página de login.
  *
- * O login do projeto fica no index.html.
+ * O login do projeto fica no login.html.
  */
 function redirectToLogin() {
 
     localStorage.removeItem("token");
 
-    window.location.href = "index.html";
+    window.location.href = "login.html";
 }
 
 
@@ -539,7 +539,7 @@ function logout() {
 
     localStorage.removeItem("token");
 
-    window.location.href = "index.html";
+    window.location.href = "login.html";
 }
 
 

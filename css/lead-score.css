@@ -1,0 +1,90 @@
+/**
+ * css/lead-score.css
+ *
+ * Estilos da funcionalidade de Lead Score e busca inteligente
+ * (badge de pontuação, motivos da pontuação, busca por texto livre
+ * "dentistas em Vitória"). Depende dos tokens definidos em dashboard.css
+ * (--color-*) e do reset/tipografia de style.css, que já são carregados
+ * antes deste arquivo em dashboard.html.
+ *
+ * Movido para este arquivo a partir de dashboard.css, onde estava
+ * indevidamente colado (causa original do 404 em css/lead-score.css).
+ * Nenhum estilo foi duplicado: o que está aqui foi removido de lá.
+ */
+
+/* --- Busca inteligente --- */
+.leads-smart-search {
+    margin-bottom: 1rem;
+}
+
+.leads-smart-search__hint {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted, #6b7280);
+    margin-top: 0.25rem;
+}
+
+/* --- Badge de Lead Score --- */
+.lead-score-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.lead-score-badge--alta {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.lead-score-badge--media {
+    background: #fef9c3;
+    color: #854d0e;
+}
+
+.lead-score-badge--baixa {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+.lead-score-badge--nao-qualificado {
+    background: #e5e7eb;
+    color: #4b5563;
+}
+
+/* --- Motivos da pontuação --- */
+.lead-score-reasons {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.lead-score-reasons li {
+    font-size: 0.8rem;
+    line-height: 1.3;
+}
+
+.lead-score-reasons li.is-negative {
+    color: #6b7280;
+}
+
+/* --- Cabeçalho do card com score --- */
+.lead-card__score-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin: 0.35rem 0 0.5rem;
+}
+
+/* --- Grupo de ordenação nos filtros (sobrepõe o max-width padrão de dashboard.css) --- */
+.leads-filters__select {
+    max-width: 220px;
+}
